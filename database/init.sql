@@ -1,11 +1,45 @@
-CREATE DATABASE IF NOT EXISTS flashsale_db;
-USE flashsale_db;
+CREATE DATABASE IF NOT EXISTS ecommerce_db;
+USE ecommerce_db;
 
-CREATE TABLE IF NOT EXISTS barang (
+CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    nama_barang VARCHAR(100) NOT NULL,
-    stok INT NOT NULL,
-    harga INT NOT NULL
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    role ENUM('penjual', 'pembeli') NOT NULL
 );
 
-INSERT INTO barang (nama_barang, stok, harga) VALUES ('Sepatu Kets Awam', 100, 99000);
+CREATE TABLE products (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nama_barang VARCHAR(100) NOT NULL,
+    harga INT NOT NULL,
+    stok INT NOT NULL,
+    foto_barang VARCHAR(255) NOT NULL,
+    penjual_id INT,
+    FOREIGN KEY (penjual_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+INSERT INTO users (username, password, role) VALUES 
+('toko_naumi', 'password123', 'penjual'),
+('buyer_mpay1', 'password123', 'pembeli');CREATE DATABASE IF NOT EXISTS ecommerce_db;
+USE ecommerce_db;
+
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    role ENUM('penjual', 'pembeli') NOT NULL
+);
+
+CREATE TABLE products (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nama_barang VARCHAR(100) NOT NULL,
+    harga INT NOT NULL,
+    stok INT NOT NULL,
+    foto_barang VARCHAR(255) NOT NULL,
+    penjual_id INT,
+    FOREIGN KEY (penjual_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+INSERT INTO users (username, password, role) VALUES 
+('Naufal', 'password123', 'penjual'),
+('Ruth', 'password123', 'pembeli');
