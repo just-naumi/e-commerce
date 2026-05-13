@@ -1,6 +1,6 @@
 <?php
 session_start();
-$backend_url = getenv('BACKEND_URL') ?: 'http://backend-service/api.php';
+$backend_url = getenv('BACKEND_URL') ?: 'http://X.X.X.X:30081/api.php';
 
 if (isset($_POST['login'])) {
     $ch = curl_init("$backend_url?action=login");
@@ -22,19 +22,57 @@ if (isset($_POST['login'])) {
 ?>
 <!DOCTYPE html>
 <html lang="id">
-<head><title>Login - Flash Sale</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"></head>
-<body class="bg-light d-flex align-items-center vh-100">
-    <div class="container text-center" style="max-width: 400px;">
-        <h2 class="mb-4 text-danger fw-bold">🔥 Login E-Commerce</h2>
-        <?php if(isset($error)) echo "<div class='alert alert-danger'>$error</div>"; ?>
-        <div class="card shadow-sm p-4">
-            <form method="POST">
-                <input type="text" name="username" class="form-control mb-3" placeholder="Username" required>
-                <input type="password" name="password" class="form-control mb-3" placeholder="Password" required>
-                <button type="submit" name="login" class="btn btn-danger w-100">Masuk</button>
-            </form>
-        </div>
-        <p class="mt-3 text-muted">Akses Penjual: <b>toko_naumi</b><br>Akses Pembeli: <b>buyer_mpay1</b><br>Pass: password123</p>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — NaumiShop</title>
+    <meta name="description" content="Login ke NaumiShop dan nikmati Flash Sale terbaik!">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+<div class="login-page">
+    <!-- Kiri: Branding -->
+    <div class="login-left">
+        <div class="login-illustration">🛍️</div>
+        <h1>NaumiShop</h1>
+        <p>Platform belanja online terpercaya.<br>Temukan jutaan produk dengan harga terbaik<br>langsung dari penjual terpercaya.</p>
     </div>
+
+    <!-- Kanan: Form Login -->
+    <div class="login-right fade-up">
+        <h2>Masuk ke Akun</h2>
+        <p class="sub">Selamat datang kembali di NaumiShop!</p>
+
+        <?php if (isset($error)): ?>
+        <div class="alert-error">
+            <i class="fas fa-exclamation-circle"></i> <?= $error ?>
+        </div>
+        <?php endif; ?>
+
+        <form method="POST" style="width:100%">
+            <div class="form-group">
+                <label class="form-label"><i class="fas fa-user" style="color:var(--primary);margin-right:6px"></i>Username</label>
+                <input type="text" name="username" class="form-control" placeholder="Masukkan username" required autofocus>
+            </div>
+            <div class="form-group">
+                <label class="form-label"><i class="fas fa-lock" style="color:var(--primary);margin-right:6px"></i>Password</label>
+                <input type="password" name="password" id="pwd" class="form-control" placeholder="Masukkan password" required>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:20px">
+                <input type="checkbox" id="show-pwd" onchange="document.getElementById('pwd').type=this.checked?'text':'password'">
+                <label for="show-pwd" style="font-size:13px;color:var(--gray);cursor:pointer">Tampilkan password</label>
+            </div>
+            <button type="submit" name="login" class="btn-primary">
+                <i class="fas fa-sign-in-alt"></i> Masuk
+            </button>
+        </form>
+
+        <div class="demo-info">
+            <p>🏪 <strong>Akun Penjual:</strong> Naufal / password123</p>
+            <p>🛒 <strong>Akun Pembeli:</strong> Ruth / password123</p>
+        </div>
+    </div>
+</div>
 </body>
 </html>
