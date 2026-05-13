@@ -31,9 +31,9 @@ $CATEGORIES = [
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
 /* ── BANNER SLIDER ── */
-.slider-wrap{position:relative;overflow:hidden;border-radius:12px;background:#f0f0f0;aspect-ratio:16/5;max-height:260px}
-.slider-track{display:flex;transition:transform .5s cubic-bezier(.4,0,.2,1)}
-.slider-track img{min-width:100%;max-width:100%;height:100%;object-fit:cover;flex-shrink:0}
+.slider-wrap{position:relative;overflow:hidden;border-radius:12px;background:#f0f0f0;width:100%;height:220px}
+.slider-track{display:flex;width:100%;height:100%;transition:transform .5s cubic-bezier(.4,0,.2,1)}
+.slider-track img{width:100%;height:100%;min-width:100%;flex-shrink:0;object-fit:cover;display:block}
 .slider-btn{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.85);border:none;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:14px;color:#333;box-shadow:0 2px 8px rgba(0,0,0,.15);transition:.2s;z-index:10}
 .slider-btn:hover{background:#fff;box-shadow:0 4px 16px rgba(0,0,0,.2)}
 .slider-prev{left:12px}.slider-next{right:12px}
