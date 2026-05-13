@@ -1,0 +1,14 @@
+# IDEs
+.vscode/
+.idea/
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# PHP
+vendor/
+composer.lock
+
+# Docker
+.docker/
