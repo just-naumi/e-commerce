@@ -1,4 +1,9 @@
 <?php
+// Suppress PHP warnings agar tidak korupsi JSON output
+error_reporting(0);
+ini_set('display_errors', 0);
+ob_start(); // Buffer output — header tetap bisa diset walau ada output dini
+
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json");
 
@@ -9,11 +14,18 @@ $db   = getenv('DB_NAME') ?: 'ecommerce_db';
 
 $conn = new mysqli($host, $user, $pass, $db);
 if ($conn->connect_error) {
+    ob_clean();
     http_response_code(503);
-    die(json_encode(["status"=>"error","message"=>"Database tidak tersedia"]));
+    die(json_encode(["status"=>"error","message"=>"Database tidak tersedia: ".$conn->connect_error]));
 }
 
+// ── AUTO MIGRATION: Tambah kolom baru jika belum ada (tanpa perlu restart DB pod) ──
+$conn->query("ALTER TABLE products ADD COLUMN IF NOT EXISTS kategori   VARCHAR(50)  NOT NULL DEFAULT 'Lainnya' AFTER foto_barang");
+$conn->query("ALTER TABLE products ADD COLUMN IF NOT EXISTS deskripsi  TEXT AFTER kategori");
+$conn->query("ALTER TABLE products ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP AFTER penjual_id");
+
 $action = $_GET['action'] ?? '';
+
 
 // ── 1. LOGIN ──────────────────────────────────────────────
 if ($action === 'login') {
@@ -143,11 +155,11 @@ elseif ($action === 'add_product') {
         $upload_dir = __DIR__ . '/uploads/';
         if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
         if (!move_uploaded_file($_FILES['foto']['tmp_name'], $upload_dir . $foto_name)) {
-            http_response_code(500);
+            ob_clean(); http_response_code(500);
             die(json_encode(["status"=>"error","message"=>"Gagal upload foto — cek permission folder uploads/"]));
         }
     } else {
-        http_response_code(400);
+        ob_clean(); http_response_code(400);
         die(json_encode(["status"=>"error","message"=>"Foto produk wajib diupload"]));
     }
 
@@ -156,11 +168,12 @@ elseif ($action === 'add_product') {
          VALUES (?,?,?,?,?,?,?)"
     );
     if (!$stmt) {
-        http_response_code(500);
+        ob_clean(); http_response_code(500);
         die(json_encode(["status"=>"error","message"=>"Prepare gagal: ".$conn->error]));
     }
     // s=string i=int → nama(s) harga(i) stok(i) foto(s) kategori(s) deskripsi(s) penjual_id(i)
     $stmt->bind_param("siisssi", $nama, $harga, $stok, $foto_name, $kategori, $deskripsi, $penjual_id);
+    ob_clean();
     if ($stmt->execute()) {
         echo json_encode(["status"=>"success","message"=>"Produk berhasil ditambahkan","id"=>$conn->insert_id]);
     } else {
