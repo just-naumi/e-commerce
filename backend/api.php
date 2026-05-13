@@ -2,7 +2,6 @@
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json");
 
-// Koneksi DB via ENV (di-set dari Kubernetes ConfigMap / Secret)
 $host = getenv('DB_HOST') ?: 'database-service';
 $user = getenv('DB_USER') ?: 'root';
 $pass = getenv('DB_PASS') ?: 'passwordtubes';
@@ -11,106 +10,183 @@ $db   = getenv('DB_NAME') ?: 'ecommerce_db';
 $conn = new mysqli($host, $user, $pass, $db);
 if ($conn->connect_error) {
     http_response_code(503);
-    die(json_encode(["status" => "error", "message" => "Database tidak tersedia"]));
+    die(json_encode(["status"=>"error","message"=>"Database tidak tersedia"]));
 }
 
 $action = $_GET['action'] ?? '';
 
-// ── 1. LOGIN ──────────────────────────────────────────────────────────────
+// ── 1. LOGIN ──────────────────────────────────────────────
 if ($action === 'login') {
     $username = $conn->real_escape_string($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
-
-    $stmt = $conn->prepare("SELECT id, username, role FROM users WHERE username = ? AND password = ?");
+    $stmt = $conn->prepare("SELECT id,username,role FROM users WHERE username=? AND password=?");
     $stmt->bind_param("ss", $username, $password);
     $stmt->execute();
-    $result = $stmt->get_result();
-
-    if ($row = $result->fetch_assoc()) {
-        echo json_encode(["status" => "success", "data" => $row]);
+    $res = $stmt->get_result();
+    if ($row = $res->fetch_assoc()) {
+        echo json_encode(["status"=>"success","data"=>$row]);
     } else {
         http_response_code(401);
-        echo json_encode(["status" => "error", "message" => "Username atau password salah"]);
+        echo json_encode(["status"=>"error","message"=>"Username atau password salah"]);
     }
     $stmt->close();
 }
 
-// ── 2. GET PRODUCTS ───────────────────────────────────────────────────────
+// ── 2. GET PRODUCTS (support filter kategori & search) ────
 elseif ($action === 'get_products') {
-    $res  = $conn->query("SELECT * FROM products ORDER BY id DESC");
-    $data = [];
-    while ($row = $res->fetch_assoc()) {
-        $data[] = $row;
+    $kategori = $_GET['kategori'] ?? '';
+    $search   = $_GET['search']   ?? '';
+    $seller   = intval($_GET['penjual_id'] ?? 0);
+
+    $where = [];
+    $params = [];
+    $types  = '';
+
+    if ($kategori && $kategori !== 'Semua') {
+        $where[]  = 'p.kategori = ?';
+        $params[] = $kategori;
+        $types   .= 's';
     }
+    if ($search) {
+        $where[]  = 'p.nama_barang LIKE ?';
+        $params[] = "%$search%";
+        $types   .= 's';
+    }
+    if ($seller > 0) {
+        $where[]  = 'p.penjual_id = ?';
+        $params[] = $seller;
+        $types   .= 'i';
+    }
+
+    $sql = "SELECT p.*, u.username AS nama_penjual FROM products p
+            LEFT JOIN users u ON p.penjual_id = u.id";
+    if ($where) $sql .= ' WHERE ' . implode(' AND ', $where);
+    $sql .= ' ORDER BY p.id DESC';
+
+    $stmt = $conn->prepare($sql);
+    if ($params) $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $res  = $stmt->get_result();
+    $data = [];
+    while ($row = $res->fetch_assoc()) $data[] = $row;
+    echo json_encode($data);
+    $stmt->close();
+}
+
+// ── 3. GET CATEGORIES ────────────────────────────────────
+elseif ($action === 'get_categories') {
+    $res = $conn->query("SELECT kategori, COUNT(*) as jumlah FROM products GROUP BY kategori ORDER BY jumlah DESC");
+    $data = [];
+    while ($row = $res->fetch_assoc()) $data[] = $row;
     echo json_encode($data);
 }
 
-// ── 3. ADD PRODUCT ────────────────────────────────────────────────────────
+// ── 4. GET STATS (for seller dashboard) ──────────────────
+elseif ($action === 'get_stats') {
+    $penjual_id = intval($_GET['penjual_id'] ?? 0);
+    $where = $penjual_id > 0 ? "WHERE penjual_id = $penjual_id" : '';
+
+    $stats = [];
+
+    // Total produk
+    $r = $conn->query("SELECT COUNT(*) as total FROM products $where");
+    $stats['total_produk'] = $r->fetch_assoc()['total'];
+
+    // Total stok
+    $r = $conn->query("SELECT SUM(stok) as total FROM products $where");
+    $stats['total_stok'] = $r->fetch_assoc()['total'] ?? 0;
+
+    // Nilai inventori
+    $r = $conn->query("SELECT SUM(harga*stok) as total FROM products $where");
+    $stats['nilai_inventori'] = $r->fetch_assoc()['total'] ?? 0;
+
+    // Stok hampir habis (1-10)
+    $r = $conn->query("SELECT COUNT(*) as total FROM products $where ".($where?'AND':'WHERE')." stok BETWEEN 1 AND 10");
+    $stats['hampir_habis'] = $r->fetch_assoc()['total'];
+
+    // Stok habis
+    $r = $conn->query("SELECT COUNT(*) as total FROM products $where ".($where?'AND':'WHERE')." stok = 0");
+    $stats['stok_habis'] = $r->fetch_assoc()['total'];
+
+    // Per kategori
+    $r = $conn->query("SELECT kategori, COUNT(*) as jumlah, SUM(stok) as total_stok FROM products $where GROUP BY kategori ORDER BY jumlah DESC");
+    $stats['per_kategori'] = [];
+    while ($row = $r->fetch_assoc()) $stats['per_kategori'][] = $row;
+
+    echo json_encode(["status"=>"success","data"=>$stats]);
+}
+
+// ── 5. ADD PRODUCT ────────────────────────────────────────
 elseif ($action === 'add_product') {
     $nama       = $conn->real_escape_string($_POST['nama_barang'] ?? '');
     $harga      = intval($_POST['harga']      ?? 0);
     $stok       = intval($_POST['stok']       ?? 0);
     $penjual_id = intval($_POST['penjual_id'] ?? 0);
+    $kategori   = $conn->real_escape_string($_POST['kategori'] ?? 'Lainnya');
+    $deskripsi  = $conn->real_escape_string($_POST['deskripsi'] ?? '');
 
-    // Validasi sederhana
-    if (empty($nama) || $harga <= 0 || $stok < 0 || $penjual_id <= 0) {
+    if (empty($nama) || $harga <= 0 || $penjual_id <= 0) {
         http_response_code(400);
-        die(json_encode(["status" => "error", "message" => "Data tidak lengkap atau tidak valid"]));
+        die(json_encode(["status"=>"error","message"=>"Data tidak lengkap"]));
     }
 
-    // Upload foto
-    if (empty($_FILES['foto']['tmp_name'])) {
-        http_response_code(400);
-        die(json_encode(["status" => "error", "message" => "Foto produk wajib diupload"]));
+    $foto_name = '';
+    if (!empty($_FILES['foto']['tmp_name'])) {
+        $ext       = strtolower(pathinfo($_FILES['foto']['name'], PATHINFO_EXTENSION));
+        $allowed   = ['jpg','jpeg','png','webp','gif'];
+        if (!in_array($ext, $allowed)) {
+            http_response_code(400);
+            die(json_encode(["status"=>"error","message"=>"Format file tidak didukung"]));
+        }
+        $foto_name  = time() . '_' . uniqid() . '.' . $ext;
+        $upload_dir = __DIR__ . '/uploads/';
+        if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
+        if (!move_uploaded_file($_FILES['foto']['tmp_name'], $upload_dir . $foto_name)) {
+            http_response_code(500);
+            die(json_encode(["status"=>"error","message"=>"Gagal upload foto"]));
+        }
     }
 
-    $ext       = pathinfo($_FILES['foto']['name'], PATHINFO_EXTENSION);
-    $foto_name = time() . '_' . uniqid() . '.' . $ext;
-    $upload_dir = __DIR__ . '/uploads/';
-
-    if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
-
-    if (!move_uploaded_file($_FILES['foto']['tmp_name'], $upload_dir . $foto_name)) {
-        http_response_code(500);
-        die(json_encode(["status" => "error", "message" => "Gagal menyimpan foto"]));
-    }
-
-    $stmt = $conn->prepare("INSERT INTO products (nama_barang, harga, stok, foto_barang, penjual_id) VALUES (?, ?, ?, ?, ?)");
-    $stmt->bind_param("siisi", $nama, $harga, $stok, $foto_name, $penjual_id);
-
+    $stmt = $conn->prepare("INSERT INTO products (nama_barang,harga,stok,foto_barang,kategori,deskripsi,penjual_id) VALUES (?,?,?,?,?,?,?)");
+    $stmt->bind_param("siisssi", $nama, $harga, $stok, $foto_name, $kategori, $deskripsi, $penjual_id);
     if ($stmt->execute()) {
-        echo json_encode(["status" => "success", "message" => "Produk berhasil ditambahkan"]);
+        echo json_encode(["status"=>"success","message"=>"Produk berhasil ditambahkan","id"=>$conn->insert_id]);
     } else {
         http_response_code(500);
-        echo json_encode(["status" => "error", "message" => "Gagal menyimpan ke database"]);
+        echo json_encode(["status"=>"error","message"=>"Gagal simpan ke database"]);
     }
     $stmt->close();
 }
 
-// ── 4. DELETE PRODUCT ─────────────────────────────────────────────────────
-elseif ($action === 'delete_product') {
-    $id = intval($_POST['id'] ?? 0);
+// ── 6. UPDATE PRODUCT ─────────────────────────────────────
+elseif ($action === 'update_product') {
+    $id       = intval($_POST['id']    ?? 0);
+    $stok     = intval($_POST['stok']  ?? 0);
+    $harga    = intval($_POST['harga'] ?? 0);
 
-    if ($id <= 0) {
-        http_response_code(400);
-        die(json_encode(["status" => "error", "message" => "ID tidak valid"]));
-    }
-
-    // Hapus file foto
-    $res = $conn->query("SELECT foto_barang FROM products WHERE id = $id");
-    if ($row = $res->fetch_assoc()) {
-        $foto_path = __DIR__ . '/uploads/' . $row['foto_barang'];
-        if (file_exists($foto_path)) unlink($foto_path);
-    }
-
-    $conn->query("DELETE FROM products WHERE id = $id");
-    echo json_encode(["status" => "success", "message" => "Produk berhasil dihapus"]);
+    if ($id <= 0) { http_response_code(400); die(json_encode(["status"=>"error","message"=>"ID tidak valid"])); }
+    $conn->query("UPDATE products SET stok=$stok, harga=$harga WHERE id=$id");
+    echo json_encode(["status"=>"success","message"=>"Produk diperbarui"]);
 }
 
-// ── DEFAULT ───────────────────────────────────────────────────────────────
+// ── 7. DELETE PRODUCT ─────────────────────────────────────
+elseif ($action === 'delete_product') {
+    $id = intval($_POST['id'] ?? 0);
+    if ($id <= 0) { http_response_code(400); die(json_encode(["status"=>"error","message"=>"ID tidak valid"])); }
+
+    $res = $conn->query("SELECT foto_barang FROM products WHERE id=$id");
+    if ($row = $res->fetch_assoc()) {
+        $path = __DIR__ . '/uploads/' . $row['foto_barang'];
+        if ($row['foto_barang'] && file_exists($path)) unlink($path);
+    }
+    $conn->query("DELETE FROM products WHERE id=$id");
+    echo json_encode(["status"=>"success","message"=>"Produk dihapus"]);
+}
+
+// ── DEFAULT ───────────────────────────────────────────────
 else {
     http_response_code(404);
-    echo json_encode(["status" => "error", "message" => "Action tidak dikenal: $action"]);
+    echo json_encode(["status"=>"error","message"=>"Action tidak dikenal: $action"]);
 }
 
 $conn->close();
