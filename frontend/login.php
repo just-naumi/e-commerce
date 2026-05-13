@@ -1,6 +1,6 @@
 <?php
 session_start();
-$backend_url=getenv('BACKEND_URL')?:'http://X.X.X.X:30081/api.php';
+$backend_url=getenv('BACKEND_URL')?:'http://backend-service/api.php';
 if(isset($_POST['login'])){
   $ch=curl_init("$backend_url?action=login");
   curl_setopt_array($ch,[CURLOPT_POST=>1,CURLOPT_POSTFIELDS=>http_build_query($_POST),CURLOPT_RETURNTRANSFER=>true]);

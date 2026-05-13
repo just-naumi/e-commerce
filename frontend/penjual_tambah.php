@@ -1,7 +1,7 @@
 <?php
 session_start();
 if(!isset($_SESSION['user'])||$_SESSION['user']['role']!='penjual'){header("Location: login.php");exit;}
-$backend_url=getenv('BACKEND_URL')?:'http://X.X.X.X:30081/api.php';
+$backend_url=getenv('BACKEND_URL')?:'http://backend-service/api.php';
 $u=$_SESSION['user']['username'];$uid=$_SESSION['user']['id'];$init=strtoupper(substr($u,0,1));
 $error='';
 
