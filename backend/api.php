@@ -118,42 +118,54 @@ elseif ($action === 'get_stats') {
 
 // ── 5. ADD PRODUCT ────────────────────────────────────────
 elseif ($action === 'add_product') {
-    $nama       = $conn->real_escape_string($_POST['nama_barang'] ?? '');
-    $harga      = intval($_POST['harga']      ?? 0);
-    $stok       = intval($_POST['stok']       ?? 0);
+    // Ambil data — TIDAK pakai real_escape_string karena sudah pakai bind_param
+    $nama       = trim($_POST['nama_barang'] ?? '');
+    $harga      = intval($_POST['harga']     ?? 0);
+    $stok       = intval($_POST['stok']      ?? 0);
     $penjual_id = intval($_POST['penjual_id'] ?? 0);
-    $kategori   = $conn->real_escape_string($_POST['kategori'] ?? 'Lainnya');
-    $deskripsi  = $conn->real_escape_string($_POST['deskripsi'] ?? '');
+    $kategori   = trim($_POST['kategori']    ?? 'Lainnya');
+    $deskripsi  = trim($_POST['deskripsi']   ?? '');
 
     if (empty($nama) || $harga <= 0 || $penjual_id <= 0) {
         http_response_code(400);
-        die(json_encode(["status"=>"error","message"=>"Data tidak lengkap"]));
+        die(json_encode(["status"=>"error","message"=>"Data tidak lengkap (nama/harga/penjual_id)"]));
     }
 
     $foto_name = '';
     if (!empty($_FILES['foto']['tmp_name'])) {
-        $ext       = strtolower(pathinfo($_FILES['foto']['name'], PATHINFO_EXTENSION));
-        $allowed   = ['jpg','jpeg','png','webp','gif'];
+        $ext     = strtolower(pathinfo($_FILES['foto']['name'], PATHINFO_EXTENSION));
+        $allowed = ['jpg','jpeg','png','webp','gif'];
         if (!in_array($ext, $allowed)) {
             http_response_code(400);
-            die(json_encode(["status"=>"error","message"=>"Format file tidak didukung"]));
+            die(json_encode(["status"=>"error","message"=>"Format file tidak didukung: $ext"]));
         }
         $foto_name  = time() . '_' . uniqid() . '.' . $ext;
         $upload_dir = __DIR__ . '/uploads/';
         if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
         if (!move_uploaded_file($_FILES['foto']['tmp_name'], $upload_dir . $foto_name)) {
             http_response_code(500);
-            die(json_encode(["status"=>"error","message"=>"Gagal upload foto"]));
+            die(json_encode(["status"=>"error","message"=>"Gagal upload foto — cek permission folder uploads/"]));
         }
+    } else {
+        http_response_code(400);
+        die(json_encode(["status"=>"error","message"=>"Foto produk wajib diupload"]));
     }
 
-    $stmt = $conn->prepare("INSERT INTO products (nama_barang,harga,stok,foto_barang,kategori,deskripsi,penjual_id) VALUES (?,?,?,?,?,?,?)");
+    $stmt = $conn->prepare(
+        "INSERT INTO products (nama_barang,harga,stok,foto_barang,kategori,deskripsi,penjual_id)
+         VALUES (?,?,?,?,?,?,?)"
+    );
+    if (!$stmt) {
+        http_response_code(500);
+        die(json_encode(["status"=>"error","message"=>"Prepare gagal: ".$conn->error]));
+    }
+    // s=string i=int → nama(s) harga(i) stok(i) foto(s) kategori(s) deskripsi(s) penjual_id(i)
     $stmt->bind_param("siisssi", $nama, $harga, $stok, $foto_name, $kategori, $deskripsi, $penjual_id);
     if ($stmt->execute()) {
         echo json_encode(["status"=>"success","message"=>"Produk berhasil ditambahkan","id"=>$conn->insert_id]);
     } else {
         http_response_code(500);
-        echo json_encode(["status"=>"error","message"=>"Gagal simpan ke database"]);
+        echo json_encode(["status"=>"error","message"=>"Execute gagal: ".$stmt->error]);
     }
     $stmt->close();
 }

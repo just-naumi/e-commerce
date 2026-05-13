@@ -6,23 +6,40 @@ $u=$_SESSION['user']['username'];$uid=$_SESSION['user']['id'];$init=strtoupper(s
 $error='';
 
 if(isset($_POST['tambah'])){
-  if(empty($_FILES['foto']['tmp_name'])){$error='Foto produk wajib diupload!';}
-  elseif(empty(trim($_POST['nama_barang']))||intval($_POST['harga'])<=0){$error='Lengkapi semua data!';}
-  else{
-    $cfile=new CURLFile($_FILES['foto']['tmp_name'],$_FILES['foto']['type'],$_FILES['foto']['name']);
-    $ch=curl_init("$backend_url?action=add_product");
-    curl_setopt_array($ch,[CURLOPT_POST=>1,CURLOPT_POSTFIELDS=>[
-      "nama_barang"=>trim($_POST['nama_barang']),
-      "harga"=>intval($_POST['harga']),
-      "stok"=>intval($_POST['stok']),
-      "kategori"=>$_POST['kategori']??'Lainnya',
-      "deskripsi"=>trim($_POST['deskripsi']??''),
-      "penjual_id"=>$uid,
-      "foto"=>$cfile
-    ],CURLOPT_RETURNTRANSFER=>true]);
-    $res=json_decode(curl_exec($ch),true);curl_close($ch);
-    if(($res['status']??'')=='success'){header("Location: penjual_produk.php?added=1");exit;}
-    else{$error=$res['message']??'Gagal menambahkan produk';}
+  if(empty(trim($_POST['nama_barang']))||intval($_POST['harga'])<=0){
+    $error='Lengkapi semua data (nama & harga wajib)!';
+  } else {
+    $cfile=!empty($_FILES['foto']['tmp_name'])
+      ? new CURLFile($_FILES['foto']['tmp_name'],$_FILES['foto']['type'],$_FILES['foto']['name'])
+      : null;
+    if(!$cfile){$error='Foto produk wajib diupload!';}
+    else{
+      $ch=curl_init("$backend_url?action=add_product");
+      curl_setopt_array($ch,[
+        CURLOPT_POST=>1,
+        CURLOPT_POSTFIELDS=>[
+          "nama_barang"=>trim($_POST['nama_barang']),
+          "harga"=>intval($_POST['harga']),
+          "stok"=>intval($_POST['stok']),
+          "kategori"=>$_POST['kategori']??'Lainnya',
+          "deskripsi"=>trim($_POST['deskripsi']??''),
+          "penjual_id"=>$uid,
+          "foto"=>$cfile
+        ],
+        CURLOPT_RETURNTRANSFER=>true,
+        CURLOPT_TIMEOUT=>15
+      ]);
+      $raw=curl_exec($ch);
+      $curl_err=curl_error($ch);
+      curl_close($ch);
+      if($raw===false){
+        $error='Tidak dapat terhubung ke backend API. ('.$curl_err.')';
+      } else {
+        $res=json_decode($raw,true);
+        if(($res['status']??'')=='success'){header("Location: penjual_produk.php?added=1");exit;}
+        else{$error=$res['message']??'Gagal menambahkan produk (response tidak dikenal)';}
+      }
+    }
   }
 }
 $CATS=['Elektronik','Fashion','Makanan','Kecantikan','Olahraga','Rumah Tangga','Lainnya'];

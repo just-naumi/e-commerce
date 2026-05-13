@@ -21,6 +21,11 @@ CREATE TABLE IF NOT EXISTS products (
     FOREIGN KEY (penjual_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- Migrasi: tambah kolom baru jika tabel sudah ada sebelumnya
+ALTER TABLE products ADD COLUMN IF NOT EXISTS kategori   VARCHAR(50)  NOT NULL DEFAULT 'Lainnya' AFTER foto_barang;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS deskripsi  TEXT AFTER kategori;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP AFTER penjual_id;
+
 INSERT IGNORE INTO users (username, password, role) VALUES
 ('Naufal',      'password123', 'penjual'),
 ('Ruth',        'password123', 'pembeli'),
