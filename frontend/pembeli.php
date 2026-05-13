@@ -179,6 +179,8 @@ $CATEGORIES = [
   </div>
 </div>
 
+<?php include 'footer.php'; ?>
+
 <div class="toast" id="toast"></div>
 
 <script>

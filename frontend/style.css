@@ -68,8 +68,58 @@ a{text-decoration:none;color:inherit}
 .cta-section{background:var(--grad);border-radius:24px;padding:64px 40px;text-align:center;color:#fff;margin:0 24px}
 .cta-section h2{font-size:36px;font-weight:800;margin-bottom:12px}
 .cta-section p{font-size:16px;opacity:.9;margin-bottom:28px}
-footer{background:var(--dark);color:#aaa;padding:40px 24px;text-align:center;font-size:13px;margin-top:60px}
-footer strong{color:#fff}
+/* ─── FOOTER ─── */
+.site-footer{background:#1a1a2e;color:#aaa;margin-top:48px}
+.footer-top{border-bottom:1px solid rgba(255,255,255,.08);padding:40px 0}
+.footer-inner{max-width:1300px;margin:0 auto;padding:0 24px}
+.footer-cols{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1fr;gap:32px}
+.footer-col h4{font-size:14px;font-weight:700;color:#fff;margin-bottom:14px}
+.footer-col ul{list-style:none}
+.footer-col ul li{margin-bottom:8px}
+.footer-col ul li a{font-size:13px;color:#888;transition:.2s;display:inline-flex;align-items:center;gap:6px}
+.footer-col ul li a:hover{color:#EE4D2D}
+.footer-brand{display:flex;flex-direction:column;gap:12px}
+.footer-logo{font-size:22px;font-weight:800;color:#fff;letter-spacing:-1px}
+.footer-logo em{font-style:normal;color:#EE4D2D;font-weight:300}
+.footer-desc{font-size:13px;line-height:1.7;color:#888;max-width:220px}
+.footer-socials{display:flex;gap:8px;margin-top:4px}
+.soc-btn{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;color:#fff;transition:.2s;text-decoration:none}
+.soc-btn.fb{background:#1877F2}.soc-btn.tw{background:#1DA1F2}
+.soc-btn.ig{background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)}
+.soc-btn.yt{background:#FF0000}.soc-btn:hover{transform:translateY(-3px);opacity:.9}
+
+.footer-mid{border-bottom:1px solid rgba(255,255,255,.08);padding:28px 0}
+.footer-mid-inner{max-width:1300px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px;align-items:center}
+.footer-secure h5,.footer-download h5,.footer-payment h5{font-size:12px;font-weight:700;color:#fff;letter-spacing:.5px;text-transform:uppercase;margin-bottom:14px}
+.payment-logos{display:flex;gap:8px;flex-wrap:wrap}
+.pay-badge{background:#fff;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;color:#333;display:flex;align-items:center;gap:5px;height:32px}
+.pay-badge i{font-size:16px}
+.pay-badge.visa{color:#1A1F71}
+.pay-badge.mc{color:#EB001B}
+.pay-badge.bca{color:#0064B0}
+.pay-badge.gopay{color:#00AED6}
+.pay-badge.ovo{color:#4C3494}
+.pay-badge.transfer{color:#27AE60}
+.store-btns{display:flex;flex-direction:column;gap:8px}
+.store-btn{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:10px 16px;color:#fff;transition:.2s;cursor:pointer}
+.store-btn:hover{background:rgba(255,255,255,.15)}
+.store-btn i{font-size:22px}
+.store-btn div{text-align:left}
+.store-btn div small{display:block;font-size:10px;opacity:.7}
+.store-btn div span{font-size:13px;font-weight:600}
+
+.footer-bot{padding:16px 0}
+.footer-bot-inner{max-width:1300px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.footer-copy{font-size:12px;color:#666}
+.footer-copy strong{color:#aaa}
+.footer-links{display:flex;gap:20px}
+.footer-links a{font-size:12px;color:#666;transition:.2s}
+.footer-links a:hover{color:#EE4D2D}
+@media(max-width:900px){
+  .footer-cols{grid-template-columns:1fr 1fr;gap:24px}
+  .footer-mid-inner{grid-template-columns:1fr;gap:20px}
+  .footer-bot-inner{flex-direction:column;text-align:center}
+}
 
 /* ─── LOGIN ─── */
 .login-page{min-height:100vh;display:flex}

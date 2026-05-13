@@ -128,11 +128,7 @@
   </div>
 </div>
 
-<!-- FOOTER -->
-<footer>
-  <p><strong>NaumiShop</strong> — Platform e-commerce terpercaya untuk semua</p>
-  <p style="margin-top:8px">TUBES Komputasi Awan · Dibuat dengan ❤️ oleh Naufal & Ruth</p>
-</footer>
+<?php include 'footer.php'; ?>
 
 <script>
 // Smooth scroll for anchor links
