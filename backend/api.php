@@ -2,10 +2,13 @@
 // Suppress PHP warnings agar tidak korupsi JSON output
 error_reporting(0);
 ini_set('display_errors', 0);
-ob_start(); // Buffer output — header tetap bisa diset walau ada output dini
+ob_start(); // Buffer output
 
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json");
+
+// 1. MATIKAN STRICT MODE MYSQLI AGAR TIDAK SILENT CRASH
+mysqli_report(MYSQLI_REPORT_OFF); 
 
 $host = getenv('DB_HOST') ?: 'database-service';
 $user = getenv('DB_USER') ?: 'root';
@@ -19,10 +22,10 @@ if ($conn->connect_error) {
     die(json_encode(["status"=>"error","message"=>"Database tidak tersedia: ".$conn->connect_error]));
 }
 
-// ── AUTO MIGRATION: Tambah kolom baru jika belum ada (tanpa perlu restart DB pod) ──
-$conn->query("ALTER TABLE products ADD COLUMN IF NOT EXISTS kategori   VARCHAR(50)  NOT NULL DEFAULT 'Lainnya' AFTER foto_barang");
-$conn->query("ALTER TABLE products ADD COLUMN IF NOT EXISTS deskripsi  TEXT AFTER kategori");
-$conn->query("ALTER TABLE products ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP AFTER penjual_id");
+// 2. MATIKAN SEMENTARA AUTO MIGRATION INI (BERI KOMENTAR //)
+// $conn->query("ALTER TABLE products ADD COLUMN IF NOT EXISTS kategori VARCHAR(50) NOT NULL DEFAULT 'Lainnya' AFTER foto_barang");
+// $conn->query("ALTER TABLE products ADD COLUMN IF NOT EXISTS deskripsi TEXT AFTER kategori");
+// $conn->query("ALTER TABLE products ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP AFTER penjual_id");
 
 $action = $_GET['action'] ?? '';
 
