@@ -2,8 +2,6 @@
 session_start();
 if(!isset($_SESSION['user'])||$_SESSION['user']['role']!='pembeli'){header("Location: login.php");exit;}
 $backend_url=getenv('BACKEND_URL')?:'http://backend-service/api.php';
-$base_url=str_replace("/api.php","",$backend_url);
-$img_url = 'http://3.90.201.75:30081/uploads/';
 $u=$_SESSION['user']['username'];
 $init=strtoupper(substr($u,0,1));
 
@@ -150,8 +148,8 @@ $CATEGORIES = [
     <div class="prod-grid2">
     <?php foreach($products as $p):?>
     <div class="pc2">
-      <?php if(!empty($p['foto_barang'])):?>
-        <img src="<?=$img_url . htmlspecialchars($p['foto_barang'])?>" class="pc2-img" alt=""
+      <?php if(!empty($p['foto_base64'])):?>
+        <img src="<?=$p['foto_base64']?>" class="pc2-img" alt=""
              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
         <div class="pc2-ph" style="display:none"><i class="fas fa-image"></i></div>
       <?php else:?><div class="pc2-ph"><i class="fas fa-image"></i></div><?php endif;?>

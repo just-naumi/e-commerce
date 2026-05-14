@@ -2,8 +2,6 @@
 session_start();
 if(!isset($_SESSION['user'])||$_SESSION['user']['role']!='penjual'){header("Location: login.php");exit;}
 $backend_url=getenv('BACKEND_URL')?:'http://backend-service/api.php';
-$base_url=str_replace("/api.php","",$backend_url);
-$img_url = 'http://3.90.201.75:30081/uploads/';
 $u=$_SESSION['user']['username'];$uid=$_SESSION['user']['id'];$init=strtoupper(substr($u,0,1));
 
 if(isset($_GET['hapus'])){
@@ -92,7 +90,7 @@ $CATS=['Semua','Elektronik','Fashion','Makanan','Kecantikan','Olahraga','Rumah T
           ?>
           <tr data-name="<?=strtolower(htmlspecialchars($p['nama_barang']))?>">
             <td style="color:#bbb;font-size:12px"><?=$i++?></td>
-            <td><?php if(!empty($p['foto_barang'])):?><img src="<?=$img_url . htmlspecialchars($p['foto_barang'])?>" class="thumb" onerror="this.style.display='none'"><?php else:?><div class="thumb-ph"><i class="fas fa-image"></i></div><?php endif;?></td>
+            <td><?php if(!empty($p['foto_base64'])):?><img src="<?=$p['foto_base64']?>" class="thumb" onerror="this.style.display='none'"><?php else:?><div class="thumb-ph"><i class="fas fa-image"></i></div><?php endif;?></td>
             <td style="font-weight:600;max-width:180px"><?=htmlspecialchars($p['nama_barang'])?></td>
             <td><span style="background:#FFF3F0;color:var(--primary);padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600"><?=htmlspecialchars($p['kategori']??'—')?></span></td>
             <td>Rp <?=number_format($p['harga'],0,',','.')?></td>

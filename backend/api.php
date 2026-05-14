@@ -138,7 +138,7 @@ elseif ($action === 'get_stats') {
     echo json_encode(["status"=>"success","data"=>$stats]);
 }
 
-// ── 5. ADD PRODUCT ────────────────────────────────────────
+// ── 5. ADD PRODUCT (Base64 — 100% Stateless) ────────────────
 elseif ($action === 'add_product') {
     $nama       = trim($_POST['nama_barang'] ?? '');
     $harga      = intval($_POST['harga']     ?? 0);
@@ -153,42 +153,31 @@ elseif ($action === 'add_product') {
         die(json_encode(["status"=>"error","message"=>"Data tidak lengkap (nama/harga/penjual_id)"]));
     }
 
-    $foto_name = '';
+    // Konversi foto ke Base64 Data URI — tidak perlu folder uploads
+    $foto_base64 = '';
     if (!empty($_FILES['foto']['tmp_name'])) {
-        $ext     = strtolower(pathinfo($_FILES['foto']['name'], PATHINFO_EXTENSION));
-        $allowed = ['jpg','jpeg','png','webp','gif'];
-        if (!in_array($ext, $allowed)) {
-            ob_clean();
-            http_response_code(400);
-            die(json_encode(["status"=>"error","message"=>"Format file tidak didukung: $ext"]));
-        }
-        $foto_name  = time() . '_' . uniqid() . '.' . $ext;
-        $upload_dir = __DIR__ . '/uploads/';
-        if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
-        if (!move_uploaded_file($_FILES['foto']['tmp_name'], $upload_dir . $foto_name)) {
-            ob_clean(); 
-            http_response_code(500);
-            die(json_encode(["status"=>"error","message"=>"Gagal upload foto — cek permission folder uploads/"]));
-        }
+        $img_data    = file_get_contents($_FILES['foto']['tmp_name']);
+        $mime        = mime_content_type($_FILES['foto']['tmp_name']);
+        $foto_base64 = 'data:' . $mime . ';base64,' . base64_encode($img_data);
     } else {
-        ob_clean(); 
+        ob_clean();
         http_response_code(400);
         die(json_encode(["status"=>"error","message"=>"Foto produk wajib diupload"]));
     }
 
     $stmt = $conn->prepare(
-        "INSERT INTO products (nama_barang,harga,stok,foto_barang,kategori,deskripsi,penjual_id)
-         VALUES (?,?,?,?,?,?,?)"
+        "INSERT INTO products (nama_barang,harga,stok,foto_barang,foto_base64,kategori,deskripsi,penjual_id)
+         VALUES (?,?,?,'base64',?,?,?,?)"
     );
     if (!$stmt) {
-        ob_clean(); 
+        ob_clean();
         http_response_code(500);
         die(json_encode(["status"=>"error","message"=>"Prepare gagal: ".$conn->error]));
     }
-    
-    $stmt->bind_param("siisssi", $nama, $harga, $stok, $foto_name, $kategori, $deskripsi, $penjual_id);
-    
-    ob_clean(); // BERSIHKAN BUFFER SEBELUM OUTPUT
+    // s=string i=int → nama(s) harga(i) stok(i) foto_base64(s) kategori(s) deskripsi(s) penjual_id(i)
+    $stmt->bind_param("siisssi", $nama, $harga, $stok, $foto_base64, $kategori, $deskripsi, $penjual_id);
+
+    ob_clean();
     if ($stmt->execute()) {
         echo json_encode(["status"=>"success","message"=>"Produk berhasil ditambahkan","id"=>$conn->insert_id]);
     } else {

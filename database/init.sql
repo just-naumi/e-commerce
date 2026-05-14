@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS products (
     harga       INT          NOT NULL,
     stok        INT          NOT NULL DEFAULT 0,
     foto_barang VARCHAR(255) NOT NULL DEFAULT '',
+    foto_base64 LONGTEXT,
     kategori    VARCHAR(50)  NOT NULL DEFAULT 'Lainnya',
     deskripsi   TEXT,
     penjual_id  INT,
@@ -22,7 +23,8 @@ CREATE TABLE IF NOT EXISTS products (
 );
 
 -- Migrasi: tambah kolom baru jika tabel sudah ada sebelumnya
-ALTER TABLE products ADD COLUMN IF NOT EXISTS kategori   VARCHAR(50)  NOT NULL DEFAULT 'Lainnya' AFTER foto_barang;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS foto_base64 LONGTEXT AFTER foto_barang;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS kategori   VARCHAR(50)  NOT NULL DEFAULT 'Lainnya' AFTER foto_base64;
 ALTER TABLE products ADD COLUMN IF NOT EXISTS deskripsi  TEXT AFTER kategori;
 ALTER TABLE products ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP AFTER penjual_id;
 
