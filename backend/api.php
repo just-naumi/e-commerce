@@ -35,6 +35,8 @@ if ($action === 'login') {
     $stmt->bind_param("ss", $username, $password);
     $stmt->execute();
     $res = $stmt->get_result();
+    
+    ob_clean(); // BERSIHKAN BUFFER SEBELUM OUTPUT
     if ($row = $res->fetch_assoc()) {
         echo json_encode(["status"=>"success","data"=>$row]);
     } else {
@@ -81,6 +83,8 @@ elseif ($action === 'get_products') {
     $res  = $stmt->get_result();
     $data = [];
     while ($row = $res->fetch_assoc()) $data[] = $row;
+    
+    ob_clean(); // BERSIHKAN BUFFER SEBELUM OUTPUT
     echo json_encode($data);
     $stmt->close();
 }
@@ -90,6 +94,8 @@ elseif ($action === 'get_categories') {
     $res = $conn->query("SELECT kategori, COUNT(*) as jumlah FROM products GROUP BY kategori ORDER BY jumlah DESC");
     $data = [];
     while ($row = $res->fetch_assoc()) $data[] = $row;
+    
+    ob_clean(); // BERSIHKAN BUFFER SEBELUM OUTPUT
     echo json_encode($data);
 }
 
@@ -125,12 +131,12 @@ elseif ($action === 'get_stats') {
     $stats['per_kategori'] = [];
     while ($row = $r->fetch_assoc()) $stats['per_kategori'][] = $row;
 
+    ob_clean(); // BERSIHKAN BUFFER SEBELUM OUTPUT
     echo json_encode(["status"=>"success","data"=>$stats]);
 }
 
 // ── 5. ADD PRODUCT ────────────────────────────────────────
 elseif ($action === 'add_product') {
-    // Ambil data — TIDAK pakai real_escape_string karena sudah pakai bind_param
     $nama       = trim($_POST['nama_barang'] ?? '');
     $harga      = intval($_POST['harga']     ?? 0);
     $stok       = intval($_POST['stok']      ?? 0);
@@ -139,6 +145,7 @@ elseif ($action === 'add_product') {
     $deskripsi  = trim($_POST['deskripsi']   ?? '');
 
     if (empty($nama) || $harga <= 0 || $penjual_id <= 0) {
+        ob_clean();
         http_response_code(400);
         die(json_encode(["status"=>"error","message"=>"Data tidak lengkap (nama/harga/penjual_id)"]));
     }
@@ -148,6 +155,7 @@ elseif ($action === 'add_product') {
         $ext     = strtolower(pathinfo($_FILES['foto']['name'], PATHINFO_EXTENSION));
         $allowed = ['jpg','jpeg','png','webp','gif'];
         if (!in_array($ext, $allowed)) {
+            ob_clean();
             http_response_code(400);
             die(json_encode(["status"=>"error","message"=>"Format file tidak didukung: $ext"]));
         }
@@ -155,11 +163,13 @@ elseif ($action === 'add_product') {
         $upload_dir = __DIR__ . '/uploads/';
         if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
         if (!move_uploaded_file($_FILES['foto']['tmp_name'], $upload_dir . $foto_name)) {
-            ob_clean(); http_response_code(500);
+            ob_clean(); 
+            http_response_code(500);
             die(json_encode(["status"=>"error","message"=>"Gagal upload foto — cek permission folder uploads/"]));
         }
     } else {
-        ob_clean(); http_response_code(400);
+        ob_clean(); 
+        http_response_code(400);
         die(json_encode(["status"=>"error","message"=>"Foto produk wajib diupload"]));
     }
 
@@ -168,12 +178,14 @@ elseif ($action === 'add_product') {
          VALUES (?,?,?,?,?,?,?)"
     );
     if (!$stmt) {
-        ob_clean(); http_response_code(500);
+        ob_clean(); 
+        http_response_code(500);
         die(json_encode(["status"=>"error","message"=>"Prepare gagal: ".$conn->error]));
     }
-    // s=string i=int → nama(s) harga(i) stok(i) foto(s) kategori(s) deskripsi(s) penjual_id(i)
+    
     $stmt->bind_param("siisssi", $nama, $harga, $stok, $foto_name, $kategori, $deskripsi, $penjual_id);
-    ob_clean();
+    
+    ob_clean(); // BERSIHKAN BUFFER SEBELUM OUTPUT
     if ($stmt->execute()) {
         echo json_encode(["status"=>"success","message"=>"Produk berhasil ditambahkan","id"=>$conn->insert_id]);
     } else {
@@ -189,15 +201,25 @@ elseif ($action === 'update_product') {
     $stok     = intval($_POST['stok']  ?? 0);
     $harga    = intval($_POST['harga'] ?? 0);
 
-    if ($id <= 0) { http_response_code(400); die(json_encode(["status"=>"error","message"=>"ID tidak valid"])); }
+    if ($id <= 0) { 
+        ob_clean();
+        http_response_code(400); 
+        die(json_encode(["status"=>"error","message"=>"ID tidak valid"])); 
+    }
     $conn->query("UPDATE products SET stok=$stok, harga=$harga WHERE id=$id");
+    
+    ob_clean(); // BERSIHKAN BUFFER SEBELUM OUTPUT
     echo json_encode(["status"=>"success","message"=>"Produk diperbarui"]);
 }
 
 // ── 7. DELETE PRODUCT ─────────────────────────────────────
 elseif ($action === 'delete_product') {
     $id = intval($_POST['id'] ?? 0);
-    if ($id <= 0) { http_response_code(400); die(json_encode(["status"=>"error","message"=>"ID tidak valid"])); }
+    if ($id <= 0) { 
+        ob_clean();
+        http_response_code(400); 
+        die(json_encode(["status"=>"error","message"=>"ID tidak valid"])); 
+    }
 
     $res = $conn->query("SELECT foto_barang FROM products WHERE id=$id");
     if ($row = $res->fetch_assoc()) {
@@ -205,11 +227,14 @@ elseif ($action === 'delete_product') {
         if ($row['foto_barang'] && file_exists($path)) unlink($path);
     }
     $conn->query("DELETE FROM products WHERE id=$id");
+    
+    ob_clean(); // BERSIHKAN BUFFER SEBELUM OUTPUT
     echo json_encode(["status"=>"success","message"=>"Produk dihapus"]);
 }
 
 // ── DEFAULT ───────────────────────────────────────────────
 else {
+    ob_clean(); // BERSIHKAN BUFFER SEBELUM OUTPUT
     http_response_code(404);
     echo json_encode(["status"=>"error","message"=>"Action tidak dikenal: $action"]);
 }
